@@ -53,10 +53,20 @@ if st.button("🔍 Gesamten Kanton Aargau durchsuchen"):
 
         for idx, gemeinde in enumerate(gemeinden):
             xmin, ymin, xmax, ymax = gemeinde["bbox"]
-            query_url = f"https://api.geo.ag.ch/services/rest/featurelayer/AVParzellen/MapServer/0/query?f=json&where=1%3D1&geometryType=esriGeometryEnvelope&geometry={{\"xmin\":{xmin},\"ymin\":{ymin},\"xmax\":{xmax},\"ymax\":{ymax}}}&inSR=2056&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false"
+            query_url = (
+                f"https://api.geo.ag.ch/services/rest/featurelayer/AVParzellen/MapServer/0/query"
+                f"?f=json&where=1=1&outFields=*&geometry={xmin},{ymin},{xmax},{ymax}"
+                f"&geometryType=esriGeometryEnvelope&spatialRel=esriSpatialRelIntersects"
+                f"&inSR=2056&returnGeometry=false"
+            )
 
             try:
                 response = requests.get(query_url, headers=headers)
+                if response.status_code != 200:
+                    st.warning(f"⚠ Fehler bei {gemeinde['name']}: Status {response.status_code}")
+                    st.code(response.text)
+                    continue
+
                 data = response.json()
                 features = data.get("features", [])
 
@@ -73,7 +83,7 @@ if st.button("🔍 Gesamten Kanton Aargau durchsuchen"):
 
                 st.write(f"✓ {gemeinde['name']} durchsucht ({idx+1}/{len(gemeinden)})")
             except Exception as e:
-                st.warning(f"Fehler bei {gemeinde['name']}: {e}")
+                st.warning(f"❌ Fehler bei {gemeinde['name']}: {e}")
             time.sleep(1.0)
 
         if not grundstuecke:
