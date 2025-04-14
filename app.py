@@ -17,7 +17,6 @@ user_email = st.text_input("E-Mail")
 st.markdown("---")
 st.markdown("### Gemeindedaten (CSV hochladen oder integrierte Demo verwenden)")
 
-# Demo-Gemeindedaten (5 Gemeinden)
 default_csv = """Gemeinde,xmin,ymin,xmax,ymax,email
 Aarau,2635000,1250000,2637000,1252000,info@aarau.ch
 Baden,2670000,1252000,2672000,1254000,info@baden.ch
@@ -50,13 +49,14 @@ if st.button("🔍 Gesamten Kanton Aargau durchsuchen"):
     else:
         st.info("Suche läuft... bitte etwas Geduld.")
         grundstuecke = []
+        headers = {"User-Agent": "Mozilla/5.0"}
 
         for idx, gemeinde in enumerate(gemeinden):
             xmin, ymin, xmax, ymax = gemeinde["bbox"]
             query_url = f"https://api.geo.ag.ch/services/rest/featurelayer/AVParzellen/MapServer/0/query?f=json&where=1%3D1&geometryType=esriGeometryEnvelope&geometry={{\"xmin\":{xmin},\"ymin\":{ymin},\"xmax\":{xmax},\"ymax\":{ymax}}}&inSR=2056&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false"
 
             try:
-                response = requests.get(query_url)
+                response = requests.get(query_url, headers=headers)
                 data = response.json()
                 features = data.get("features", [])
 
@@ -83,12 +83,10 @@ if st.button("🔍 Gesamten Kanton Aargau durchsuchen"):
             st.success(f"{len(df)} mögliche herrenlose Grundstücke gefunden.")
             st.dataframe(df)
 
-            # CSV-Export
             csv_buf = io.StringIO()
             df.to_csv(csv_buf, index=False)
             st.download_button("📥 CSV herunterladen", data=csv_buf.getvalue(), file_name="grundstuecke_ag.csv")
 
-            # PDF-Export vorbereiten
             pdf = FPDF()
             pdf.add_page()
             pdf.set_font("Arial", size=12)
